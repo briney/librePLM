@@ -1,29 +1,143 @@
 model:
   encoder:
-    d_model: 64
-    n_heads: 4
-    n_layers: 2
-    ffn_mult: 2.667
+    d_model: 256
+    n_heads: 4  # target head_dim is 64
+    n_layers: 8
+    ffn_mult: 2.667  # 8/3 to account for SwiGLU projection
     vocab_size: 32
     pad_id: 1
     dropout: 0.1
     attn_dropout: 0.0
-    norm: layernorm
+    norm: layernorm  # layernorm | rmsnorm
   classifier:
     ignore_index: -100
   init:
     std: 0.02
+
 data:
-  batch_size: 4
-  max_len: 32
-  num_workers: 0
+  batch_size: 4  # per-device
+  max_len: 1280
+  num_workers: 4  # dataloader workers
   pin_memory: true
   load_coords: null
   prefetch_factor: 4
-  train: {}
-  eval: {}
   shuffle_shards: true
   shuffle_rows: true
+
+  # file paths for datasets
+  # Training dataset(s). Supports both:
+  #   - Single dataset (100% sampling):
+  #       train: /path/to/train.parquet
+  #     (equivalently via CLI: `data.train=/path/to/train.parquet`)
+  #   - Multiple datasets with fractional sampling:
+  #       train:
+  #         dataset_a:
+  #           path: /path/to/dataset_a.parquet
+  #           fraction: 0.6
+  #         dataset_b:
+  #           path: /path/to/dataset_b.parquet
+  #           fraction: 0.4
+  #     (via CLI: `+data.train.dataset_a.path=... +data.train.dataset_a.fraction=...`)
+  #
+  # Notes:
+  #   - Fractions are normalized to sum to 1.0.
+  #   - You may omit some/all fractions; unspecified fractions share the remaining mass.
+  train: {}
+
+  # Eval dataset(s). Supports both:
+  #   - Single dataset:
+  #       eval: /path/to/eval.parquet
+  #     (via CLI: `data.eval=/path/to/eval.parquet`)
+  #   - Multiple datasets:
+  #       eval:
+  #         validation: /path/to/val.parquet
+  #         test: /path/to/test.parquet
+  #     (via CLI: `+data.eval.validation=... +data.eval.test=...`)
+  #   - Multiple datasets with per-dataset options:
+  #       eval:
+  #         validation:
+  #           path: /path/to/val.parquet
+  #           batch_size: 32
+  #           load_coords: true  # Per-dataset coordinate loading
+  #
+  # Per-dataset metric configuration:
+  #   Each eval dataset can specify which metrics to run:
+  #
+  #   - Whitelist approach (metrics.only): Run ONLY these metrics
+  #       eval:
+  #         seq_val:
+  #           path: /path/to/seq_val.parquet
+  #           load_coords: false
+  #           metrics:
+  #             only: [accuracy, perplexity]  # Only run these metrics
+  #
+  #   - Enable/disable approach: Override individual metric settings
+  #       eval:
+  #         struct_val:
+  #           path: /path/to/struct_val.parquet
+  #           load_coords: true
+  #           metrics:
+  #             lddt:
+  #               enabled: true
+  #             p_at_l:
+  #               enabled: true
+  #               contact_threshold: 6.0  # Override default threshold
+  #
+  #   - Hybrid approach: Combine 'only' with per-metric overrides
+  #       eval:
+  #         custom_val:
+  #           path: /path/to/custom.parquet
+  #           metrics:
+  #             only: [accuracy, lddt]  # Start with this whitelist
+  #             lddt:
+  #               enabled: false  # But disable lddt (overrides 'only')
+  #             perplexity:
+  #               enabled: true   # And add perplexity (overrides 'only' exclusion)
+  #
+  # CLI examples:
+  #   # Single eval with metric whitelist:
+  #   stok train data.train=... +data.eval.val.path=/path '+data.eval.val.metrics.only=[accuracy,perplexity]'
+  #
+  #   # Multiple evals with different metrics:
+  #   stok train data.train=... \
+  #     +data.eval.seq_val.path=/seq.parquet '+data.eval.seq_val.metrics.only=[accuracy,perplexity]' \
+  #     +data.eval.struct_val.path=/struct.parquet +data.eval.struct_val.load_coords=true \
+  #     '+data.eval.struct_val.metrics.only=[accuracy,lddt,tm_score]'
+  #
+  # Structure folder format (PDB/mmCIF files):
+  #   For eval datasets containing PDB or mmCIF structure files, use format: "structure".
+  #   Supported file extensions: .pdb, .ent, .cif, .mmcif
+  #
+  #   - Explicit structure folder (recommended):
+  #       eval:
+  #         cameo:
+  #           path: /path/to/pdb_folder
+  #           format: structure        # Required for explicit structure folder
+  #           chain_id: A              # Optional: specific chain to extract (default: first chain)
+  #           recursive: false         # Optional: search subdirectories (default: false)
+  #           metrics:
+  #             only: [lddt, tm_score, rmsd]
+  #
+  #   - Auto-detection: A directory containing .pdb/.cif files (but no .parquet files)
+  #     is automatically treated as a structure folder.
+  #
+  #   CLI examples:
+  #     # Explicit structure folder:
+  #     stok train data.train=... \
+  #       +data.eval.cameo.path=/cameo_pdbs +data.eval.cameo.format=structure \
+  #       '+data.eval.cameo.metrics.only=[lddt,tm_score,rmsd]'
+  #
+  #     # With chain selection:
+  #     stok train data.train=... \
+  #       +data.eval.test.path=/pdbs +data.eval.test.format=structure \
+  #       +data.eval.test.chain_id=A
+  #
+  #   Notes:
+  #     - Structure folders always have coordinates available (load_coords is implicit)
+  #     - No VQ indices are available; classification metrics use sequence predictions
+  #     - Compatible metrics: lddt, tm_score, rmsd, fape, p_at_l (for MLM)
+  eval: {}
+
 train:
   optimizer:
     name: adamw
@@ -33,14 +147,14 @@ train:
     - 0.95
     weight_decay: 0.01
   scheduler:
-    decay: linear
+    decay: linear  # cosine | linear
     warmup_steps: 2000
-    stable_steps: 0
-    decay_steps: null
+    stable_steps: 0  # if 0, no stable hold, decay starts immediately after warmup
+    decay_steps: null  # if null, auto-derived as (num_steps − warmup_steps − stable_steps), clamped at 0
   seed: 1337
-  num_steps: 10
-  epochs: null
-  log_steps: 5
+  num_steps: 10000  # total training steps
+  epochs: null  # if provided, overrides num_steps
+  log_steps: 50
   checkpoint_steps: null
   grad_accum_steps: 1
   grad_clip_norm: 1.0
@@ -69,12 +183,13 @@ train:
         enabled: true
       p_at_l:
         enabled: true
-        contact_threshold: 8.0
-        min_seq_sep: 6
+        contact_threshold: 8.0   # threshold (in Angstroms) for defining contacts
+        min_seq_sep: 6  # considers only long-range contacts
         use_attention: true
         num_layers: null
-        use_logistic_regression: false
+        use_logistic_regression: true
         logreg_n_train: 20
         logreg_lambda: 0.15
-        logreg_n_iterations: 5
+        logreg_n_iterations: 3
+
 print_model_summary: true
