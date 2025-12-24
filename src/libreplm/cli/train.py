@@ -26,6 +26,7 @@ from libreplm.data.dataset import (
     InterleavedIterableDataset,
     IterableTokenizedDataset,
     MapAsIterableDataset,
+    StructureFolderDataset,
     TokenizedDataset,
 )
 from libreplm.eval import Evaluator, MetricLogger
@@ -495,12 +496,28 @@ def _build_dataloaders(
     mask_token_prob = float(mlm_cfg.get("mask_token_prob", 0.8))
     random_token_prob = float(mlm_cfg.get("random_token_prob", 0.1))
 
+    # Structure file extensions for auto-detection
+    STRUCTURE_EXTENSIONS = {".pdb", ".ent", ".cif", ".mmcif"}
+
     # dataset picker usable for train/eval
     def _pick_dataset(
         path: str,
         load_coords: bool,
+        *,
+        dataset_format: str | None = None,
+        chain_id: str | None = None,
+        recursive: bool = False,
     ):
         p = Path(path)
+
+        # Check for explicit structure folder format
+        if dataset_format == "structure":
+            return StructureFolderDataset(
+                folder_path=str(p),
+                max_length=max_len,
+                chain_id=chain_id,
+                recursive=bool(recursive),
+            )
 
         # heuristic: directory containing parquet shards -> Iterable; else map-style
         if p.is_dir():
@@ -516,6 +533,18 @@ def _build_dataloaders(
                     shuffle_shards=shuffle_shards,
                     shuffle_rows=shuffle_rows,
                     load_coords=bool(load_coords),
+                )
+
+            # Auto-detect structure folder: directory with structure files but no parquet
+            has_structure_files = any(
+                p.glob(f"*{ext}") for ext in STRUCTURE_EXTENSIONS
+            )
+            if has_structure_files:
+                return StructureFolderDataset(
+                    folder_path=str(p),
+                    max_length=max_len,
+                    chain_id=chain_id,
+                    recursive=bool(recursive),
                 )
 
         return TokenizedDataset(
@@ -672,9 +701,17 @@ def _build_dataloaders(
         eval_batch_size = int(eval_cfg.get("batch_size", batch_size))
         eval_load_coords = eval_cfg.get("load_coords", user_load_coords)
 
+        # Extract structure folder options
+        eval_format = eval_cfg.get("format")
+        eval_chain_id = eval_cfg.get("chain_id")
+        eval_recursive = bool(eval_cfg.get("recursive", False))
+
         ds = _pick_dataset(
             eval_path,
             load_coords=bool(eval_load_coords),
+            dataset_format=eval_format,
+            chain_id=eval_chain_id,
+            recursive=eval_recursive,
         )
         eval_loaders[name] = DataLoader(
             ds,
