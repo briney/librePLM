@@ -1,0 +1,21 @@
+# "base" model size (~865M parameters)
+encoder:
+  d_model: 1536
+  n_heads: 24  # target head_dim is 64
+  n_layers: 36
+  ffn_mult: 2.667  # 8/3 to account for SwiGLU projection
+  vocab_size: 32
+  pad_id: 1
+  dropout: 0.1
+  attn_dropout: 0.0
+  norm: "layernorm"  # "layernorm" or "rmsnorm"
+
+# ignore_index for MLM loss computation
+# Used by model.forward(), collate functions, and evaluation metrics
+# NOTE: Kept under 'classifier' for backward compatibility with existing code references.
+# This will be relocated in a future refactor.
+classifier:
+  ignore_index: -100
+
+init:
+  std: 0.02

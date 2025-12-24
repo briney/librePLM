@@ -1,0 +1,10 @@
+# @package _global_
+defaults:
+  - model: arch
+  - data: base
+  - train: base
+
+# Runtime overrides shared across entries
+print_model_summary: true
+
+

@@ -1,0 +1,80 @@
+model:
+  encoder:
+    d_model: 64
+    n_heads: 4
+    n_layers: 2
+    ffn_mult: 2.667
+    vocab_size: 32
+    pad_id: 1
+    dropout: 0.1
+    attn_dropout: 0.0
+    norm: layernorm
+  classifier:
+    ignore_index: -100
+  init:
+    std: 0.02
+data:
+  batch_size: 4
+  max_len: 32
+  num_workers: 0
+  pin_memory: true
+  load_coords: null
+  prefetch_factor: 4
+  train: {}
+  eval: {}
+  shuffle_shards: true
+  shuffle_rows: true
+train:
+  optimizer:
+    name: adamw
+    lr: 0.0003
+    betas:
+    - 0.9
+    - 0.95
+    weight_decay: 0.01
+  scheduler:
+    decay: linear
+    warmup_steps: 2000
+    stable_steps: 0
+    decay_steps: null
+  seed: 1337
+  num_steps: 10
+  epochs: null
+  log_steps: 5
+  checkpoint_steps: null
+  grad_accum_steps: 1
+  grad_clip_norm: 1.0
+  project_path: null
+  wandb:
+    enabled: false
+    project: libreplm
+    entity: null
+    group: null
+    name: null
+    tags: []
+  console:
+    enabled: true
+  objective: mlm
+  mlm:
+    mask_prob: 0.15
+    mask_token_prob: 0.8
+    random_token_prob: 0.1
+    tie_word_embeddings: true
+  eval:
+    steps: 1000
+    metrics:
+      masked_accuracy:
+        enabled: true
+      perplexity:
+        enabled: true
+      p_at_l:
+        enabled: true
+        contact_threshold: 8.0
+        min_seq_sep: 6
+        use_attention: true
+        num_layers: null
+        use_logistic_regression: false
+        logreg_n_train: 20
+        logreg_lambda: 0.15
+        logreg_n_iterations: 5
+print_model_summary: true

@@ -1,0 +1,96 @@
+optimizer:
+  name: adamw
+  lr: 3e-4
+  betas: [0.9, 0.95]
+  weight_decay: 0.01
+
+scheduler:
+  decay: linear  # "cosine" | "linear"
+  warmup_steps: 2000
+  stable_steps: 0      # if 0, no stable hold, decay starts immediately after warmup
+  decay_steps: null    # if null, auto-derived as (num_steps − warmup_steps − stable_steps), clamped at 0
+
+seed: 1337
+
+# step/epoch governance
+num_steps: 10000
+epochs: null
+
+# intervals (in steps)
+log_steps: 50
+checkpoint_steps: null
+
+# training mechanics
+grad_accum_steps: 1
+grad_clip_norm: 1.0
+
+# IO paths
+project_path: null
+
+# logging
+wandb:
+  enabled: true
+  project: "libreplm"
+  entity: null
+  group: null
+  name: null
+  tags: []
+
+# console output
+console:
+  enabled: true
+
+# training objective (MLM only - codebook training has been removed)
+objective: "mlm"
+
+# MLM-specific settings
+mlm:
+  mask_prob: 0.15 
+  mask_token_prob: 0.8  # of selected tokens, prob of replacing with <mask>
+  random_token_prob: 0.1  # of selected tokens, prob of replacing with random token
+  tie_word_embeddings: true # whether to tie LM head weights to input embeddings
+
+# Evaluation metrics configuration
+# Each metric can be enabled/disabled and configured with specific parameters.
+# Metrics are automatically filtered by objective compatibility and resource availability.
+#
+# These settings define the DEFAULTS for all eval datasets. Per-dataset metric
+# configuration can be specified in data.eval.{dataset_name}.metrics to override
+# these defaults. See configs/data/base.yaml for per-dataset configuration examples.
+#
+# Metric categories:
+#   - Classification metrics: Work with sequence-only data (no coordinates needed)
+#   - Contact metrics: Require coordinates (load_coords: true)
+#
+# Per-dataset metric selection (in data config):
+#   - Use 'metrics.only: [list]' to whitelist specific metrics for a dataset
+#   - Use 'metrics.{metric}.enabled: true/false' to enable/disable specific metrics
+#   - Use 'load_coords: true/false' to control per-dataset coordinate loading
+eval:
+  steps: 1000
+  metrics:
+    # classification metrics (sequence-only, no coordinates needed)
+    masked_accuracy:
+      enabled: true
+      # objectives: [mlm]  # Auto-filtered by objective
+    perplexity:
+      enabled: true
+      # objectives: null  # Works for all objectives
+
+    # Contact prediction (MLM only, requires coordinates)
+    # Supports two modes:
+    #   1. Standard mode: Uses mean attention weights (with APC) to predict contacts
+    #   2. Logistic regression mode: Trains LogReg on attention from all layers/heads (see Rao et al. 2020, doi: 10.1101/2020.12.15.422761)
+    p_at_l:
+      enabled: true
+      contact_threshold: 8.0
+      min_seq_sep: 6
+      use_attention: true
+      num_layers: null  # null = 10% of encoder layers (rounded up); or set explicit int
+      # logistic regression mode
+      use_logistic_regression: false
+      logreg_n_train: 20       # number of structures for training per iteration
+      logreg_lambda: 0.15      # L1 regularization strength (sklearn C = 1/lambda)
+      logreg_n_iterations: 5   # number of random train/test sampling iterations
+      # objectives: [mlm]
+      # requires_coords: true
