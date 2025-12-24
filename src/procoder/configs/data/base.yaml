@@ -78,10 +78,10 @@ train: {}
 #
 # CLI examples:
 #   # Single eval with metric whitelist:
-#   libreplm train data.train=... +data.eval.val.path=/path '+data.eval.val.metrics.only=[masked_accuracy,perplexity]'
+#   procoder train data.train=... +data.eval.val.path=/path '+data.eval.val.metrics.only=[masked_accuracy,perplexity]'
 #
 #   # Multiple evals with different metrics:
-#   libreplm train data.train=... \
+#   procoder train data.train=... \
 #     +data.eval.seq_val.path=/seq.parquet '+data.eval.seq_val.metrics.only=[masked_accuracy,perplexity]' \
 #     +data.eval.struct_val.path=/struct.parquet +data.eval.struct_val.load_coords=true \
 #     '+data.eval.struct_val.metrics.only=[masked_accuracy,p_at_l]'

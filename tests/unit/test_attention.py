@@ -9,11 +9,11 @@ and STokModel.
 import pytest
 import torch
 
-from libreplm.models.attention import MultiheadAttention
-from libreplm.models.blocks import EncoderBlock
-from libreplm.models.encoder import Encoder
-from libreplm.models.rope import RotaryEmbedding
-from libreplm.models.libreplm import PLMModel
+from procoder.models.attention import MultiheadAttention
+from procoder.models.blocks import EncoderBlock
+from procoder.models.encoder import Encoder
+from procoder.models.rope import RotaryEmbedding
+from procoder.models.libreplm import PLMModel
 
 
 @pytest.fixture

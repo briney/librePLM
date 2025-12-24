@@ -10,8 +10,8 @@ from accelerate.utils import gather_object
 from omegaconf import DictConfig
 from torch.utils.data import DataLoader
 
-from libreplm.eval.base import Metric
-from libreplm.eval.registry import build_metrics
+from procoder.eval.base import Metric
+from procoder.eval.registry import build_metrics
 
 
 def _get_model_device(model: nn.Module, accelerator) -> torch.device:

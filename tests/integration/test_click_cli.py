@@ -1,6 +1,6 @@
 from click.testing import CliRunner
 
-from libreplm.cli.cli import cli
+from procoder.cli.cli import cli
 
 
 def test_click_cli_smoke_test_runs_with_override():

@@ -7,7 +7,7 @@ with the training loop's expectations.
 import pandas as pd
 from click.testing import CliRunner
 
-from libreplm.cli.cli import cli
+from procoder.cli.cli import cli
 
 
 def test_eval_harness_produces_expected_metrics_mlm(tmp_path):

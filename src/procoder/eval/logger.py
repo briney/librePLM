@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import IO
 
-from libreplm.utils.flops import format_flops_scientific
+from procoder.utils.flops import format_flops_scientific
 
 
 class MetricLogger:

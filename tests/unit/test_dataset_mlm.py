@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 import torch
 
-from libreplm.data.dataset import DummyMLMDataset, TokenizedDataset
+from procoder.data.dataset import DummyMLMDataset, TokenizedDataset
 
 
 class TestTokenizedDatasetMLM:
@@ -145,7 +145,7 @@ class TestIterableDatasetMLM:
     def test_iterable_dataset_without_indices(self, tmp_path):
         """Test that iterable dataset works without indices column."""
         pytest.importorskip("pyarrow")
-        from libreplm.data.dataset import IterableTokenizedDataset
+        from procoder.data.dataset import IterableTokenizedDataset
 
         # Create directory with parquet shards
         shard_dir = tmp_path / "shards"

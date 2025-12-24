@@ -6,7 +6,7 @@ This directory contains tests for the librePLM project, organized for fast, CPU-
 
 - e2e Tagger training (`integration/test_e2e_tagger_training.py`)
   - Purpose: Verify the complete pipeline from tokenization to model forward/backward and optimizer steps runs without error.
-  - Scope: Uses the real `libreplm.utils.tokenizer.Tokenizer`, actual `PLMModel`, and a tiny synthetic codebook. Synthetic protein-like sequences (length ~96–128) are tokenized; labels are generated per-token except BOS/EOS/PAD positions which are ignored.
+  - Scope: Uses the real `procoder.utils.tokenizer.Tokenizer`, actual `PLMModel`, and a tiny synthetic codebook. Synthetic protein-like sequences (length ~96–128) are tokenized; labels are generated per-token except BOS/EOS/PAD positions which are ignored.
   - Pass criteria: A forward pass returns logits of shape `[B, L, C]` and a finite loss; two short optimizer steps complete and change at least one trainable parameter value.
 
 - Package data (`integration/test_package_data.py`)
@@ -16,12 +16,12 @@ This directory contains tests for the librePLM project, organized for fast, CPU-
 
 - Codebook loading (`integration/test_codebook_loading.py`)
   - Purpose: Ensure the codebook loader supports explicit path overrides and preset-based loading.
-  - Scope: Calls `libreplm.utils.codebook.load_codebook` with a custom `.pt` path (which must override any preset) and verifies the `lite` preset loads from package resources.
+  - Scope: Calls `procoder.utils.codebook.load_codebook` with a custom `.pt` path (which must override any preset) and verifies the `lite` preset loads from package resources.
   - Pass criteria: When both `preset` and `path` are provided, the loaded tensor matches the saved custom tensor shape and values; the `lite` preset returns a 2D tensor with positive dimensions.
 
 - Decoder loader (`integration/test_decoder_loader.py`)
   - Purpose: Validate pretrained decoder loading via explicit path or preset download with caching and freezing behavior.
-  - Scope: Uses `libreplm.models.decoder.load_pretrained_decoder` with a temp checkpoint path to check path override and `freeze=True`; simulates download for presets and verifies cache reuse via `LIBREPLM_DECODER_CACHE`.
+  - Scope: Uses `procoder.models.decoder.load_pretrained_decoder` with a temp checkpoint path to check path override and `freeze=True`; simulates download for presets and verifies cache reuse via `LIBREPLM_DECODER_CACHE`.
   - Pass criteria: With `path`, the model loads on CPU, is in eval mode when frozen, all params have `requires_grad=False`, and input/output projector shapes are as expected; with preset download, the first call downloads and caches once and the second call reuses the cache without re-downloading.
 
 - Training with decoder + FAPE (`integration/test_train_with_decoder_fape.py`)
@@ -31,7 +31,7 @@ This directory contains tests for the librePLM project, organized for fast, CPU-
   - Notes: Skips if `x_transformers` or a Parquet engine is unavailable.
 
 - CLI training smoke (`integration/test_cli_train_smoke.py`)
-  - Purpose: Exercise the `libreplm train` CLI end-to-end on dummy data.
+  - Purpose: Exercise the `procoder train` CLI end-to-end on dummy data.
   - Scope: Invokes Click CLI with Hydra overrides for a tiny model (e.g., `d_model=64`, `n_layers=2`, `n_heads=4`, `ffn_mult=1.0`), small data loader (`batch_size=2`, `max_len=64`, `num_workers=0`), `model.codebook.preset=lite`, a few steps (`train.num_steps=3`), and `train.wandb.enabled=false`.
   - Pass criteria: CLI exits with code 0 and prints `Training complete.`.
   - Notes: Includes an RMSNorm variant to ensure `model.encoder.norm=rmsnorm` works end-to-end.
@@ -82,7 +82,7 @@ This directory contains tests for the librePLM project, organized for fast, CPU-
 
 - Programmatic training (`integration/test_run_training_programmatic.py`)
   - Purpose: Run `run_training` directly (non-CLI) to ensure programmatic usage works with Hydra-composed configs.
-  - Scope: Composes config from packaged `libreplm/configs` via `initialize_config_dir`/`compose` and uses the same tiny overrides as the CLI smoke test.
+  - Scope: Composes config from packaged `procoder/configs` via `initialize_config_dir`/`compose` and uses the same tiny overrides as the CLI smoke test.
   - Pass criteria: No exceptions during the run; captured stdout contains `Training complete.`.
 
 - Checkpointing artifacts (`integration/test_checkpointing_and_resume.py`)
@@ -95,7 +95,7 @@ This directory contains tests for the librePLM project, organized for fast, CPU-
 
 - Click CLI smoke (`integration/test_click_cli.py`)
   - Purpose: Ensure the Click-based CLI entrypoint runs and the `smoke-test` command succeeds with overrides.
-  - Scope: Invokes `libreplm` CLI `smoke-test` with a simple override and checks output contains `OK`.
+  - Scope: Invokes `procoder` CLI `smoke-test` with a simple override and checks output contains `OK`.
   - Pass criteria: Exit code 0 and `OK` in output.
 
 - Eval decoding auto-enable (`integration/test_eval_decoding_auto_enable.py`)
@@ -264,7 +264,7 @@ This directory contains tests for the librePLM project, organized for fast, CPU-
 
 - RMSNorm (`unit/test_rmsnorm.py`)
   - Purpose: Verify RMSNorm correctness and stability.
-  - Scope: Compares `libreplm.models.blocks.RMSNorm` to a simple reference implementation, checks positive scale invariance, and ensures output dtype matches input dtype.
+  - Scope: Compares `procoder.models.blocks.RMSNorm` to a simple reference implementation, checks positive scale invariance, and ensures output dtype matches input dtype.
   - Pass criteria: Outputs match the reference within tolerance; invariance/dtype assertions hold.
 
 - Evaluation base classes (`unit/test_eval_base.py`)

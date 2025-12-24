@@ -3,8 +3,8 @@
 import pytest
 from omegaconf import OmegaConf
 
-from libreplm.eval.base import MetricBase
-from libreplm.eval.registry import (
+from procoder.eval.base import MetricBase
+from procoder.eval.registry import (
     METRIC_REGISTRY,
     build_metrics,
     get_registered_metrics,
@@ -15,7 +15,7 @@ from libreplm.eval.registry import (
 def test_metric_registry_not_empty():
     """Test that the registry contains metrics after import."""
     # Import to trigger registration
-    import libreplm.eval.metrics  # noqa: F401
+    import procoder.eval.metrics  # noqa: F401
 
     assert len(METRIC_REGISTRY) > 0
     assert "perplexity" in METRIC_REGISTRY
@@ -563,4 +563,156 @@ def test_build_metrics_no_coords_without_explicit_enable(tmp_path):
     metric_names = {type(m).__name__ for m in metrics}
 
     # Should NOT auto-detect as structure folder (no PDB/CIF files)
+    assert "PrecisionAtLMetric" not in metric_names
+
+
+def test_build_metrics_structure_format_enables_coords():
+    """Test that format='structure' automatically enables has_coords."""
+    cfg = OmegaConf.create(
+        {
+            "train": {
+                "eval": {
+                    "metrics": {
+                        "p_at_l": {"enabled": True},
+                        "perplexity": {"enabled": True},
+                    }
+                }
+            },
+            "data": {
+                "load_coords": False,  # Global: no coords
+                "eval": {
+                    "cameo": {
+                        "path": "/path/to/pdb_folder",
+                        "format": "structure",  # Structure format always has coords
+                    }
+                },
+            },
+            "model": {},
+        }
+    )
+
+    metrics = build_metrics(
+        cfg, objective="mlm", has_coords=False, eval_name="cameo"
+    )
+    metric_names = {type(m).__name__ for m in metrics}
+
+    # PrecisionAtLMetric requires coords - should be enabled due to format='structure'
+    assert "PrecisionAtLMetric" in metric_names
+    assert "PerplexityMetric" in metric_names
+
+
+def test_build_metrics_structure_folder_auto_detected(tmp_path):
+    """Test that structure folder is auto-detected and has_coords is True."""
+    # Create a structure folder with PDB files
+    struct_folder = tmp_path / "pdbs"
+    struct_folder.mkdir()
+    (struct_folder / "protein1.pdb").write_text(
+        "ATOM      1  N   ALA A   1       0.000   0.000   0.000  1.00  0.00           N\n"
+        "END\n"
+    )
+
+    cfg = OmegaConf.create(
+        {
+            "train": {
+                "eval": {
+                    "metrics": {
+                        "p_at_l": {"enabled": True},
+                        "perplexity": {"enabled": True},
+                    }
+                }
+            },
+            "data": {
+                "load_coords": False,  # Global: no coords
+                "eval": {
+                    "struct_eval": {
+                        "path": str(struct_folder),
+                        # No explicit format or load_coords
+                    }
+                },
+            },
+            "model": {},
+        }
+    )
+
+    metrics = build_metrics(
+        cfg, objective="mlm", has_coords=False, eval_name="struct_eval"
+    )
+    metric_names = {type(m).__name__ for m in metrics}
+
+    # PrecisionAtLMetric requires coords - should be enabled via auto-detection
+    assert "PrecisionAtLMetric" in metric_names
+    assert "PerplexityMetric" in metric_names
+
+
+def test_build_metrics_structure_folder_string_config_auto_detected(tmp_path):
+    """Test that structure folder auto-detection works with string config values."""
+    # Create a structure folder with CIF files
+    struct_folder = tmp_path / "cifs"
+    struct_folder.mkdir()
+    (struct_folder / "protein1.cif").write_text("data_\n_cell.length_a 50.0\n")
+
+    cfg = OmegaConf.create(
+        {
+            "train": {
+                "eval": {
+                    "metrics": {
+                        "p_at_l": {"enabled": True},
+                    }
+                }
+            },
+            "data": {
+                "load_coords": False,
+                "eval": {
+                    # String-valued config (just a path)
+                    "cif_eval": str(struct_folder),
+                },
+            },
+            "model": {},
+        }
+    )
+
+    metrics = build_metrics(
+        cfg, objective="mlm", has_coords=False, eval_name="cif_eval"
+    )
+    metric_names = {type(m).__name__ for m in metrics}
+
+    # Should auto-detect structure folder from string path
+    assert "PrecisionAtLMetric" in metric_names
+
+
+def test_build_metrics_mixed_folder_parquet_takes_precedence(tmp_path):
+    """Test that folders with both parquet AND structure files use parquet (no coords)."""
+    # Create a folder with both parquet and PDB files (edge case)
+    mixed_folder = tmp_path / "mixed"
+    mixed_folder.mkdir()
+    (mixed_folder / "data.parquet").write_bytes(b"parquet placeholder")
+    (mixed_folder / "protein1.pdb").write_text("ATOM\nEND\n")
+
+    cfg = OmegaConf.create(
+        {
+            "train": {
+                "eval": {
+                    "metrics": {
+                        "p_at_l": {"enabled": True},
+                    }
+                }
+            },
+            "data": {
+                "load_coords": False,
+                "eval": {
+                    "mixed_eval": {
+                        "path": str(mixed_folder),
+                    }
+                },
+            },
+            "model": {},
+        }
+    )
+
+    metrics = build_metrics(
+        cfg, objective="mlm", has_coords=False, eval_name="mixed_eval"
+    )
+    metric_names = {type(m).__name__ for m in metrics}
+
+    # Parquet takes precedence - should NOT detect as structure folder
     assert "PrecisionAtLMetric" not in metric_names

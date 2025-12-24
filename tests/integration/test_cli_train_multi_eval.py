@@ -5,7 +5,7 @@ from pathlib import Path
 
 from click.testing import CliRunner
 
-from libreplm.cli.cli import cli
+from procoder.cli.cli import cli
 from tests.utils.synthetic import random_protein_sequence
 
 

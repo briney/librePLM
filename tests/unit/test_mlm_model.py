@@ -3,7 +3,7 @@
 import torch
 import torch.nn as nn
 
-from libreplm.models.libreplm import LMHead, PLMModel
+from procoder.models.libreplm import LMHead, PLMModel
 
 
 class TestLMHead:

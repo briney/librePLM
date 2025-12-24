@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import torch
 
-from libreplm.data.dataset import StructureFolderDataset
+from procoder.data.dataset import StructureFolderDataset
 
 
 # Path to test data

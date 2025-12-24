@@ -3,7 +3,7 @@
 import torch
 from omegaconf import OmegaConf
 
-from libreplm.eval.base import Metric, MetricBase
+from procoder.eval.base import Metric, MetricBase
 
 
 class DummyMetric(MetricBase):

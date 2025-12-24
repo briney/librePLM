@@ -4,7 +4,7 @@ import torch
 from hydra import compose, initialize
 from omegaconf import DictConfig, OmegaConf
 
-from libreplm.models.libreplm import PLMModel
+from procoder.models.libreplm import PLMModel
 
 
 def run_smoke_test(cfg: DictConfig):

@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from click.testing import CliRunner
 
-from libreplm.cli.cli import cli
+from procoder.cli.cli import cli
 
 
 def _generate_coords_string(length: int) -> str:

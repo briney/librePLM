@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 from click.testing import CliRunner
 
-from libreplm.cli.cli import cli
+from procoder.cli.cli import cli
 
 
 # Path to test data
@@ -354,9 +354,9 @@ class TestStructureFolderDataLoaderIntegration:
         _skip_if_no_cameo()
 
         from torch.utils.data import DataLoader
-        from libreplm.data.dataset import StructureFolderDataset
-        from libreplm.data.collate import mlm_collate
-        from libreplm.utils.tokenizer import Tokenizer
+        from procoder.data.dataset import StructureFolderDataset
+        from procoder.data.collate import mlm_collate
+        from procoder.utils.tokenizer import Tokenizer
 
         dataset = StructureFolderDataset(
             folder_path=str(CAMEO_DIR),
@@ -402,9 +402,9 @@ class TestStructureFolderDataLoaderIntegration:
 
         import torch
         from torch.utils.data import DataLoader
-        from libreplm.data.dataset import StructureFolderDataset
-        from libreplm.data.collate import mlm_collate
-        from libreplm.utils.tokenizer import Tokenizer
+        from procoder.data.dataset import StructureFolderDataset
+        from procoder.data.collate import mlm_collate
+        from procoder.utils.tokenizer import Tokenizer
 
         dataset = StructureFolderDataset(
             folder_path=str(CAMEO_DIR),

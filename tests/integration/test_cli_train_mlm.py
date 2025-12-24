@@ -3,7 +3,7 @@
 import pandas as pd
 from click.testing import CliRunner
 
-from libreplm.cli.cli import cli
+from procoder.cli.cli import cli
 
 
 def test_cli_train_mlm_smoke_runs_end_to_end_cpu(tmp_path):

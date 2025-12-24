@@ -2,7 +2,7 @@
 
 import pytest
 
-from libreplm.eval.logger import MetricLogger
+from procoder.eval.logger import MetricLogger
 
 
 class MockConsole:

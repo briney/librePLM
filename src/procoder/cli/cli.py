@@ -5,7 +5,7 @@ import click
 from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
 
-from libreplm.cli.smoke_test import run_smoke_test
+from procoder.cli.smoke_test import run_smoke_test
 
 
 def _merge_custom_configs(
@@ -84,13 +84,13 @@ def smoke_test(
     to verify the selected hyperparameters are compatible.
 
     Forwards any unknown options/arguments as Hydra overrides.
-    Example: libreplm smoke-test model.encoder.n_layers=6
+    Example: procoder smoke-test model.encoder.n_layers=6
 
     Custom config files can be provided to override defaults:
-      libreplm smoke-test --model-config ./my_model.yaml
+      procoder smoke-test --model-config ./my_model.yaml
     """
     overrides = list(ctx.args)
-    with as_file(files("libreplm").joinpath("configs")) as cfg_dir:
+    with as_file(files("procoder").joinpath("configs")) as cfg_dir:
         with initialize_config_dir(version_base=None, config_dir=str(cfg_dir)):
             cfg = compose(config_name="config", overrides=overrides)
 
@@ -149,13 +149,13 @@ def train_cmd(
     language modeling objective. Supports single/multi-GPU training via Accelerate.
 
     Forwards any unknown options/arguments as Hydra overrides.
-    Example: libreplm train train.num_steps=5000 data.train=/path/train.csv
+    Example: procoder train train.num_steps=5000 data.train=/path/train.csv
 
     Custom config files can be provided to override defaults:
-      libreplm train --model-config ./my_model.yaml data.train=/path/train.csv
+      procoder train --model-config ./my_model.yaml data.train=/path/train.csv
     """
     overrides = list(ctx.args)
-    with as_file(files("libreplm").joinpath("configs")) as cfg_dir:
+    with as_file(files("procoder").joinpath("configs")) as cfg_dir:
         with initialize_config_dir(version_base=None, config_dir=str(cfg_dir)):
             cfg = compose(config_name="config", overrides=overrides)
 

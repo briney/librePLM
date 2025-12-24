@@ -20,8 +20,8 @@ from torch.utils.data import (
     Sampler,
 )
 
-from libreplm.data.collate import mlm_collate
-from libreplm.data.dataset import (
+from procoder.data.collate import mlm_collate
+from procoder.data.dataset import (
     DummyMLMDataset,
     InterleavedIterableDataset,
     IterableTokenizedDataset,
@@ -29,11 +29,15 @@ from libreplm.data.dataset import (
     StructureFolderDataset,
     TokenizedDataset,
 )
-from libreplm.eval import Evaluator, MetricLogger
-from libreplm.models.libreplm import PLMModel
-from libreplm.utils.console import ConsoleLogger
-from libreplm.utils.flops import compute_flops_6n, count_parameters, format_flops_scientific
-from libreplm.utils.tokenizer import Tokenizer
+from procoder.eval import Evaluator, MetricLogger
+from procoder.models.libreplm import PLMModel
+from procoder.utils.console import ConsoleLogger
+from procoder.utils.flops import (
+    compute_flops_6n,
+    count_parameters,
+    format_flops_scientific,
+)
+from procoder.utils.tokenizer import Tokenizer
 
 
 def _maybe_get_accelerator():
@@ -536,9 +540,7 @@ def _build_dataloaders(
                 )
 
             # Auto-detect structure folder: directory with structure files but no parquet
-            has_structure_files = any(
-                p.glob(f"*{ext}") for ext in STRUCTURE_EXTENSIONS
-            )
+            has_structure_files = any(p.glob(f"*{ext}") for ext in STRUCTURE_EXTENSIONS)
             if has_structure_files:
                 return StructureFolderDataset(
                     folder_path=str(p),
@@ -744,7 +746,7 @@ def _maybe_init_wandb(
                 import wandb
 
                 init_kwargs = dict(
-                    project=cfg.train.wandb.get("project", "libreplm"),
+                    project=cfg.train.wandb.get("project", "procoder"),
                     entity=cfg.train.wandb.get("entity"),
                     group=cfg.train.wandb.get("group"),
                     name=cfg.train.wandb.get("name"),
@@ -797,7 +799,7 @@ def run_training(cfg: DictConfig):
         if world_size == 1 and torch.cuda.device_count() > 1:
             printer(
                 "Multiple CUDA devices detected but only one process is active. "
-                "Launch multi-GPU with: accelerate launch -m libreplm.train <overrides>"
+                "Launch multi-GPU with: accelerate launch -m procoder.train <overrides>"
             )
 
     # resolve project directories and save config (main only)
@@ -1030,9 +1032,7 @@ def run_training(cfg: DictConfig):
 
             # compute masked token accuracy
             with torch.no_grad():
-                masked_acc = _compute_accuracy(
-                    outputs["logits"], labels, ignore_index
-                )
+                masked_acc = _compute_accuracy(outputs["logits"], labels, ignore_index)
                 running_masked_acc_sum += masked_acc
                 running_masked_acc_count += 1
 
@@ -1181,6 +1181,6 @@ def run_training(cfg: DictConfig):
 
 if __name__ == "__main__":
     print(
-        "This module is intended to be invoked via the CLI: `libreplm train ...`",
+        "This module is intended to be invoked via the CLI: `procoder train ...`",
         file=sys.stderr,
     )

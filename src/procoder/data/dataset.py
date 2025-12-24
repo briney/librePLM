@@ -7,7 +7,7 @@ import pyarrow.parquet as pq
 import torch
 from torch.utils.data import Dataset, IterableDataset, get_worker_info
 
-from libreplm.utils.structure_parser import parse_structure
+from procoder.utils.structure_parser import parse_structure
 
 
 class BaseTokenizedDataset:

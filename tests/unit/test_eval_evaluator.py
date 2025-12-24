@@ -6,7 +6,7 @@ import torch.nn as nn
 from omegaconf import OmegaConf
 from torch.utils.data import DataLoader, TensorDataset
 
-from libreplm.eval.evaluator import Evaluator
+from procoder.eval.evaluator import Evaluator
 
 
 class MockModel(nn.Module):
@@ -189,7 +189,7 @@ class TestEvaluatorDistributed:
 
     def test_evaluator_state_tensor_aggregation(self):
         """Test that metric state tensors can be aggregated."""
-        from libreplm.eval.metrics.classification import MaskedAccuracyMetric
+        from procoder.eval.metrics.classification import MaskedAccuracyMetric
 
         # Simulate two "processes" with different states
         metric1 = MaskedAccuracyMetric()
@@ -336,7 +336,7 @@ class TestGatherMetricStatesReshaping:
 
     def test_metric_load_state_with_reshaped_tensor(self):
         """Test that metrics can load state from properly reshaped tensors."""
-        from libreplm.eval.metrics.classification import MaskedAccuracyMetric
+        from procoder.eval.metrics.classification import MaskedAccuracyMetric
 
         original = torch.tensor([10.0, 20.0])
         # Simulate 2 processes with flattened gather
@@ -353,7 +353,7 @@ class TestGatherMetricStatesReshaping:
 
     def test_perplexity_metric_with_reshaped_tensor(self):
         """Test PerplexityMetric can load state from reshaped tensors."""
-        from libreplm.eval.metrics.classification import PerplexityMetric
+        from procoder.eval.metrics.classification import PerplexityMetric
 
         original = torch.tensor([2.0, 4.0])  # loss_sum, batch_count
         gathered = torch.tensor([2.0, 4.0, 3.0, 6.0])  # 2 processes
@@ -368,7 +368,7 @@ class TestGatherMetricStatesReshaping:
 
     def test_masked_accuracy_metric_with_reshaped_tensor(self):
         """Test MaskedAccuracyMetric can load state from reshaped tensors."""
-        from libreplm.eval.metrics.classification import MaskedAccuracyMetric
+        from procoder.eval.metrics.classification import MaskedAccuracyMetric
 
         original = torch.tensor([100.0, 200.0])
         gathered = torch.tensor([100.0, 200.0, 50.0, 100.0])
@@ -444,7 +444,7 @@ class TestGatherMetricStatesRegression:
 
     def test_mock_accelerator_gather_simulation(self):
         """Test the full _gather_metric_states method with a mock accelerator."""
-        from libreplm.eval.metrics.classification import MaskedAccuracyMetric
+        from procoder.eval.metrics.classification import MaskedAccuracyMetric
 
         class MockAccelerator:
             """Mock accelerator that simulates multi-process gather."""
@@ -495,7 +495,7 @@ class TestGatherMetricStatesRegression:
     def test_contact_metric_state_tensors_work(self):
         """Test that contact metrics can handle gathered state tensors."""
         try:
-            from libreplm.eval.metrics.contact import PrecisionAtLMetric
+            from procoder.eval.metrics.contact import PrecisionAtLMetric
         except ImportError:
             pytest.skip("Contact metrics not available")
 

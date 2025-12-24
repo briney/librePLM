@@ -4,7 +4,7 @@ import pytest
 import torch
 from omegaconf import OmegaConf
 
-from libreplm.cli.train import _build_scheduler, _compute_accuracy, _parse_eval_configs
+from procoder.cli.train import _build_scheduler, _compute_accuracy, _parse_eval_configs
 
 
 def test_build_scheduler_warmup_then_cosine_decay():

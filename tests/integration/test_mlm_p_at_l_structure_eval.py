@@ -11,9 +11,9 @@ from pathlib import Path
 from click.testing import CliRunner
 from omegaconf import OmegaConf
 
-from libreplm.cli.cli import cli
-from libreplm.eval.registry import build_metrics, _get_dataset_has_coords
-from libreplm.eval.metrics.contact import PrecisionAtLMetric, _compute_contact_map
+from procoder.cli.cli import cli
+from procoder.eval.registry import build_metrics, _get_dataset_has_coords
+from procoder.eval.metrics.contact import PrecisionAtLMetric, _compute_contact_map
 
 
 class TestContactMapComputation:
@@ -212,8 +212,8 @@ class TestEvaluatorAttentionPropagation:
 
     def test_evaluator_needs_attentions_detection(self, tmp_path):
         """Test that evaluator detects when attention weights are needed."""
-        from libreplm.eval.evaluator import Evaluator
-        from libreplm.models.libreplm import PLMModel
+        from procoder.eval.evaluator import Evaluator
+        from procoder.models.libreplm import PLMModel
 
         cfg = OmegaConf.create(
             {
@@ -278,8 +278,8 @@ class TestEvaluatorAttentionPropagation:
 
     def test_evaluator_p_at_l_num_layers_config(self, tmp_path):
         """Test that num_layers config is correctly passed to P@L metric."""
-        from libreplm.eval.evaluator import Evaluator
-        from libreplm.models.libreplm import PLMModel
+        from procoder.eval.evaluator import Evaluator
+        from procoder.models.libreplm import PLMModel
 
         cfg = OmegaConf.create(
             {

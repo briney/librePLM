@@ -4,7 +4,7 @@ import pytest
 import torch
 from omegaconf import OmegaConf
 
-from libreplm.eval.metrics.contact import (
+from procoder.eval.metrics.contact import (
     PrecisionAtLMetric,
     _apply_apc,
     _extract_attention_contacts,
@@ -452,7 +452,7 @@ class TestPrecisionAtLMetricConfig:
 
     def test_num_layers_from_config(self):
         """Test that num_layers is correctly passed from config."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -483,7 +483,7 @@ class TestPrecisionAtLMetricConfig:
 
     def test_num_layers_default_from_config(self):
         """Test that num_layers defaults to 10% of encoder layers when not specified."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -514,7 +514,7 @@ class TestPrecisionAtLMetricConfig:
 
     def test_num_layers_default_8_layers(self):
         """Test that 8-layer model gets num_layers=1."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -542,7 +542,7 @@ class TestPrecisionAtLMetricConfig:
 
     def test_num_layers_default_36_layers(self):
         """Test that 36-layer model gets num_layers=4."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -570,7 +570,7 @@ class TestPrecisionAtLMetricConfig:
 
     def test_num_layers_default_missing_encoder_config(self):
         """Test fallback to 12 layers when encoder config is missing."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -595,7 +595,7 @@ class TestPrecisionAtLMetricConfig:
 
     def test_num_layers_explicit_overrides_default(self):
         """Test that explicit num_layers config overrides the dynamic default."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -859,7 +859,7 @@ class TestPrecisionAtLLogisticRegressionConfig:
 
     def test_logreg_config_options(self):
         """Test that logreg options are correctly passed from config."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {
@@ -893,7 +893,7 @@ class TestPrecisionAtLLogisticRegressionConfig:
 
     def test_logreg_config_defaults(self):
         """Test that logreg defaults are applied when not specified."""
-        from libreplm.eval.registry import build_metrics
+        from procoder.eval.registry import build_metrics
         
         cfg = OmegaConf.create({
             "train": {

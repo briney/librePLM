@@ -1,6 +1,6 @@
 import torch
 
-from libreplm.models.blocks import RMSNorm
+from procoder.models.blocks import RMSNorm
 
 
 def _reference_rmsnorm(

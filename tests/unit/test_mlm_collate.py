@@ -2,8 +2,8 @@
 
 import torch
 
-from libreplm.data.collate import mlm_collate
-from libreplm.utils.tokenizer import Tokenizer
+from procoder.data.collate import mlm_collate
+from procoder.utils.tokenizer import Tokenizer
 
 
 def test_mlm_collate_returns_correct_shapes():

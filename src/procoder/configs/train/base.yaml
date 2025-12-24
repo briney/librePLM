@@ -30,7 +30,7 @@ project_path: null
 # logging
 wandb:
   enabled: true
-  project: "libreplm"
+  project: "procoder"
   entity: null
   group: null
   name: null

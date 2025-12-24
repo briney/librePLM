@@ -5,7 +5,7 @@ import math
 import torch
 from omegaconf import OmegaConf
 
-from libreplm.eval.metrics.classification import (
+from procoder.eval.metrics.classification import (
     MaskedAccuracyMetric,
     PerplexityMetric,
 )

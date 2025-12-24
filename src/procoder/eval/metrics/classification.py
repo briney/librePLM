@@ -8,8 +8,8 @@ from typing import ClassVar
 import torch
 from omegaconf import DictConfig
 
-from libreplm.eval.base import MetricBase
-from libreplm.eval.registry import register_metric
+from procoder.eval.base import MetricBase
+from procoder.eval.registry import register_metric
 
 
 @register_metric("masked_accuracy")

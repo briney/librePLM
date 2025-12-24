@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 from omegaconf import DictConfig, OmegaConf
 
 if TYPE_CHECKING:
-    from libreplm.eval.base import Metric
+    from procoder.eval.base import Metric
 
 # Global registry mapping metric names to their classes
 METRIC_REGISTRY: dict[str, type[Metric]] = {}
@@ -109,6 +109,36 @@ def _get_metric_config(
     return result
 
 
+def _is_structure_folder(path: str) -> bool:
+    """Check if a path is a structure folder (contains PDB/mmCIF files, no parquet).
+
+    Args:
+        path: Path to check.
+
+    Returns:
+        True if the path is a directory containing structure files.
+    """
+    from pathlib import Path
+
+    p = Path(path)
+    if not p.is_dir():
+        return False
+
+    # Check for parquet files first - if present, it's a parquet dataset
+    has_parquet = (
+        any(p.glob("*.parquet")) or any(p.glob("*.parq")) or any(p.glob("*.pq"))
+    )
+    if has_parquet:
+        return False
+
+    # Check for structure files
+    structure_extensions = {".pdb", ".ent", ".cif", ".mmcif"}
+    has_structure_files = any(
+        p.glob(f"*{ext}") for ext in structure_extensions
+    )
+    return has_structure_files
+
+
 def _get_dataset_has_coords(
     cfg: DictConfig,
     eval_name: str | None,
@@ -116,7 +146,9 @@ def _get_dataset_has_coords(
 ) -> bool:
     """Determine if a specific eval dataset has coordinates available.
 
-    Checks for per-dataset 'load_coords' or 'has_coords' overrides.
+    Checks for per-dataset 'load_coords', 'has_coords', or 'format' overrides.
+    Structure folder datasets (format: "structure") always have coordinates.
+    Auto-detects structure folders (directories with PDB/mmCIF files).
 
     Args:
         cfg: Full configuration object.
@@ -137,14 +169,25 @@ def _get_dataset_has_coords(
 
     # Handle string-valued configs (just a path) vs dict configs
     if isinstance(eval_cfg, str):
-        # String config is just a path - use default
+        # String config is just a path - check if it's a structure folder
+        if _is_structure_folder(eval_cfg):
+            return True
         return default_has_coords
     elif isinstance(eval_cfg, (dict, DictConfig)):
+        # Structure folder format always has coordinates
+        if eval_cfg.get("format") == "structure":
+            return True
+
         # Check both 'load_coords' (standard) and 'has_coords' (explicit) keys
         if "load_coords" in eval_cfg:
             return bool(eval_cfg.get("load_coords"))
         if "has_coords" in eval_cfg:
             return bool(eval_cfg.get("has_coords"))
+
+        # Auto-detect structure folder from path
+        path = eval_cfg.get("path")
+        if path and _is_structure_folder(str(path)):
+            return True
 
     return default_has_coords
 
@@ -169,7 +212,7 @@ def build_metrics(
     """
     # Import metrics to ensure they're registered
     # This import is deferred to avoid circular imports
-    import libreplm.eval.metrics  # noqa: F401
+    import procoder.eval.metrics  # noqa: F401
 
     # Resolve per-dataset has_coords override
     dataset_has_coords = _get_dataset_has_coords(cfg, eval_name, has_coords)

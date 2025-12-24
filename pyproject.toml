@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "libreplm"
+name = "procoder"
 version = "0.1.4"
 description = "Encoder-only protein tagger (SDPA + RoPE + SwiGLU)"
 readme = "README.md"
@@ -37,17 +37,17 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["libreplm*"]
+include = ["procoder*"]
 exclude = []
 
 
 [tool.setuptools.package-data]
-libreplm = [
+procoder = [
   "configs/**",
 ]
 
 
 [project.scripts]
-libreplm = "libreplm.cli.cli:cli"
+procoder = "procoder.cli.cli:cli"
 
 

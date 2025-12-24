@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from libreplm.utils.structure_parser import parse_structure, StructureData, AA3TO1
+from procoder.utils.structure_parser import parse_structure, StructureData, AA3TO1
 
 
 # Path to test data
