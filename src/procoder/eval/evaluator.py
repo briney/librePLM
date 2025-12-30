@@ -238,6 +238,12 @@ class Evaluator:
                 warnings.warn(f"Metric '{metric.name}' compute failed: {e}")
 
         self.model.train()
+
+        # Clear CUDA cache to prevent memory fragmentation between evals
+        # This is especially important for deep models with many attention layers
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         return results
 
     def evaluate_all(

@@ -361,6 +361,10 @@ class PrecisionAtLMetric(MetricBase):
                 }
             )
 
+        # Explicitly delete the large attention tensor to help garbage collection
+        # This is important for deep models where attention tensors consume significant memory
+        del attn_features
+
     def _update_standard(
         self,
         outputs: dict,
