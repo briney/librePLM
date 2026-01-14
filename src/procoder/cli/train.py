@@ -830,6 +830,9 @@ def run_training(cfg: DictConfig):
         attn_dropout=cfg.model.encoder.attn_dropout,
         norm_type=cfg.model.encoder.norm,
         tie_word_embeddings=cfg.train.mlm.get("tie_word_embeddings", True),
+        pre_norm=cfg.model.encoder.get("pre_norm", True),
+        post_norm=cfg.model.encoder.get("post_norm", False),
+        qk_norm=cfg.model.encoder.get("qk_norm", "none"),
     )
 
     # Count trainable parameters for FLOPs tracking (6N approximation)

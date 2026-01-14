@@ -3,24 +3,11 @@ import torch.nn as nn
 
 from .attention import MultiheadAttention
 from .mlp import SwiGLU
-
-
-class RMSNorm(nn.Module):
-    """Root Mean Square Layer Normalization (no mean subtraction)."""
-
-    def __init__(self, d_model: int, eps: float = 1e-6):
-        super().__init__()
-        self.weight = nn.Parameter(torch.ones(d_model))
-        self.eps = eps
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        inv_rms = torch.rsqrt(x.float().pow(2).mean(dim=-1, keepdim=True) + self.eps)
-        x = x * inv_rms.to(dtype=x.dtype)
-        return x * self.weight.to(dtype=x.dtype)
+from .norms import RMSNorm
 
 
 class EncoderBlock(nn.Module):
-    """Transformer encoder block (pre-layer norm + MHA + SwiGLU)."""
+    """Transformer encoder block with configurable pre/post normalization."""
 
     def __init__(
         self,
@@ -31,8 +18,11 @@ class EncoderBlock(nn.Module):
         rope: object,
         norm_type: str = "layernorm",
         ffn_mult: float = 4.0,
+        pre_norm: bool = True,
+        post_norm: bool = False,
+        qk_norm: str = "none",
     ):
-        """Initialize Pre-LN encoder block.
+        """Initialize encoder block with configurable normalization.
 
         Args:
             d_model: Model dimension.
@@ -40,10 +30,22 @@ class EncoderBlock(nn.Module):
             attn_dropout: Dropout probability for attention outputs.
             resid_dropout: Dropout probability for residual connections.
             rope: Rotary positional embedding instance.
-            norm_type: Normalization type ("layernorm" currently supported).
+            norm_type: Normalization type ("layernorm" or "rmsnorm").
             ffn_mult: Feedforward multiplier (hidden_dim = d_model * ffn_mult).
+            pre_norm: Apply normalization before sublayer (default: True).
+            post_norm: Apply normalization after residual (default: False).
+            qk_norm: QK normalization type ("none", "norm", or "learned_scale").
         """
         super().__init__()
+
+        # Validate at least one of pre_norm or post_norm must be True
+        if not pre_norm and not post_norm:
+            raise ValueError("At least one of pre_norm or post_norm must be True")
+
+        self.pre_norm = pre_norm
+        self.post_norm = post_norm
+
+        # Norm class selection
         norm_type = norm_type.lower()
         if norm_type == "rmsnorm":
             Norm = RMSNorm
@@ -52,13 +54,24 @@ class EncoderBlock(nn.Module):
         else:
             raise ValueError(f"Unknown norm_type: {norm_type}")
 
-        self.norm1 = Norm(d_model)
+        # Pre-norm layers (applied BEFORE sublayer)
+        self.norm1 = Norm(d_model) if pre_norm else None
+        self.norm2 = Norm(d_model) if pre_norm else None
+
+        # Post-norm layers (applied AFTER residual)
+        self.post_norm1 = Norm(d_model) if post_norm else None
+        self.post_norm2 = Norm(d_model) if post_norm else None
+
         self.attn = MultiheadAttention(
-            d_model=d_model, n_heads=n_heads, dropout=attn_dropout, rope=rope
+            d_model=d_model,
+            n_heads=n_heads,
+            dropout=attn_dropout,
+            rope=rope,
+            qk_norm=qk_norm,
+            norm_type=norm_type,
         )
         self.drop1 = nn.Dropout(resid_dropout)
 
-        self.norm2 = Norm(d_model)
         self.mlp = SwiGLU(d_model=d_model, expansion=ffn_mult, dropout=resid_dropout)
         self.drop2 = nn.Dropout(resid_dropout)
 
@@ -85,7 +98,10 @@ class EncoderBlock(nn.Module):
             If output_attentions=True: Tuple of (output, attention_weights) where
                 attention_weights has shape [B, H, L, L].
         """
-        h = self.norm1(x)
+        # ----- Self-Attention Block -----
+        # Pre-norm: h = norm(x) before sublayer
+        h = self.norm1(x) if self.pre_norm else x
+
         attn_output = self.attn(
             h,
             key_padding_mask=key_padding_mask,
@@ -99,11 +115,24 @@ class EncoderBlock(nn.Module):
             h = attn_output
             attn_weights = None
 
+        # Residual connection
         x = x + self.drop1(h)
 
-        h = self.norm2(x)
+        # Post-norm: x = norm(x) after residual
+        if self.post_norm:
+            x = self.post_norm1(x)
+
+        # ----- MLP Block -----
+        # Pre-norm: h = norm(x) before sublayer
+        h = self.norm2(x) if self.pre_norm else x
         h = self.mlp(h)
+
+        # Residual connection
         x = x + self.drop2(h)
+
+        # Post-norm: x = norm(x) after residual
+        if self.post_norm:
+            x = self.post_norm2(x)
 
         if output_attentions:
             return x, attn_weights

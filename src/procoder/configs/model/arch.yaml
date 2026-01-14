@@ -9,6 +9,9 @@ encoder:
   dropout: 0.1
   attn_dropout: 0.0
   norm: "layernorm"  # "layernorm" or "rmsnorm"
+  pre_norm: true     # Apply norm BEFORE sublayer (at least one of pre_norm/post_norm must be true)
+  post_norm: false   # Apply norm AFTER residual connection
+  qk_norm: "none"    # "none", "norm" (apply LayerNorm/RMSNorm to Q/K), or "learned_scale" (per-head scaling)
 
 # ignore_index for MLM loss computation
 # Used by model.forward(), collate functions, and evaluation metrics

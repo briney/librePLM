@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from ..utils.losses import token_ce_loss
 from .encoder import Encoder
+from .norms import RMSNorm
 
 
 class LMHead(nn.Module):
@@ -13,6 +14,7 @@ class LMHead(nn.Module):
         d_model: int,
         vocab_size: int,
         tie_weights: nn.Embedding | None = None,
+        norm_type: str = "layernorm",
     ):
         """Initialize LM head.
 
@@ -21,10 +23,20 @@ class LMHead(nn.Module):
             vocab_size: Vocabulary size for output logits.
             tie_weights: Optional embedding to tie weights with. If provided,
                 the decoder weights will be shared with the embedding weights.
+            norm_type: Normalization type ("layernorm" or "rmsnorm").
         """
         super().__init__()
         self.dense = nn.Linear(d_model, d_model)
-        self.layer_norm = nn.LayerNorm(d_model)
+
+        # Use same norm type as encoder
+        norm_type = norm_type.lower()
+        if norm_type == "rmsnorm":
+            self.layer_norm = RMSNorm(d_model)
+        elif norm_type == "layernorm":
+            self.layer_norm = nn.LayerNorm(d_model)
+        else:
+            raise ValueError(f"Unknown norm_type: {norm_type}")
+
         self.activation = nn.GELU()
 
         if tie_weights is not None:
@@ -71,6 +83,9 @@ class PLMModel(nn.Module):
         attn_dropout: float,
         norm_type: str = "layernorm",
         tie_word_embeddings: bool = True,
+        pre_norm: bool = True,
+        post_norm: bool = False,
+        qk_norm: str = "none",
     ):
         """Initialize PLM model.
 
@@ -83,8 +98,11 @@ class PLMModel(nn.Module):
             ffn_mult: Feedforward multiplier (hidden_dim = d_model * ffn_mult).
             dropout: Dropout probability for residual connections.
             attn_dropout: Dropout probability for attention outputs.
-            norm_type: Normalization type ("layernorm" currently supported).
+            norm_type: Normalization type ("layernorm" or "rmsnorm").
             tie_word_embeddings: Whether to tie LM head weights to input embeddings.
+            pre_norm: Apply normalization before sublayer (default: True).
+            post_norm: Apply normalization after residual (default: False).
+            qk_norm: QK normalization type ("none", "norm", or "learned_scale").
         """
         super().__init__()
         self.pad_id = pad_id
@@ -101,12 +119,16 @@ class PLMModel(nn.Module):
             attn_dropout=attn_dropout,
             ffn_mult=ffn_mult,
             norm_type=norm_type,
+            pre_norm=pre_norm,
+            post_norm=post_norm,
+            qk_norm=qk_norm,
         )
 
         self.lm_head = LMHead(
             d_model=d_model,
             vocab_size=vocab_size,
             tie_weights=self.embed if tie_word_embeddings else None,
+            norm_type=norm_type,
         )
 
     def forward(

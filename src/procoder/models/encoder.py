@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-from .blocks import EncoderBlock, RMSNorm
+from .blocks import EncoderBlock
+from .norms import RMSNorm
 from .rope import RotaryEmbedding
 
 
@@ -17,6 +18,9 @@ class Encoder(nn.Module):
         attn_dropout: float,
         ffn_mult: float = 4.0,
         norm_type: str = "layernorm",
+        pre_norm: bool = True,
+        post_norm: bool = False,
+        qk_norm: str = "none",
     ):
         """Initialize encoder stack.
 
@@ -26,10 +30,11 @@ class Encoder(nn.Module):
             n_layers: Number of encoder layers.
             dropout: Dropout probability for residual connections.
             attn_dropout: Dropout probability for attention outputs.
-            rope_base: RoPE base frequency.
-            rope_dim: RoPE dimensionality (must be even). If None, uses head_dim.
             ffn_mult: Feedforward multiplier (hidden_dim = d_model * ffn_mult).
-            norm_type: Normalization type ("layernorm" currently supported).
+            norm_type: Normalization type ("layernorm" or "rmsnorm").
+            pre_norm: Apply normalization before sublayer (default: True).
+            post_norm: Apply normalization after residual (default: False).
+            qk_norm: QK normalization type ("none", "norm", or "learned_scale").
         """
         super().__init__()
         self.rope = RotaryEmbedding()
@@ -43,6 +48,9 @@ class Encoder(nn.Module):
                     rope=self.rope,
                     norm_type=norm_type,
                     ffn_mult=ffn_mult,
+                    pre_norm=pre_norm,
+                    post_norm=post_norm,
+                    qk_norm=qk_norm,
                 )
                 for _ in range(n_layers)
             ]

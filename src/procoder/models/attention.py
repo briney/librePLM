@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .rope import RotaryEmbedding, apply_rope
+from .norms import RMSNorm
 
 
 class MultiheadAttention(nn.Module):
@@ -16,7 +17,13 @@ class MultiheadAttention(nn.Module):
     """
 
     def __init__(
-        self, d_model: int, n_heads: int, dropout: float, rope: RotaryEmbedding
+        self,
+        d_model: int,
+        n_heads: int,
+        dropout: float,
+        rope: RotaryEmbedding,
+        qk_norm: str = "none",
+        norm_type: str = "layernorm",
     ):
         """Initialize multi-head attention with RoPE.
 
@@ -25,6 +32,8 @@ class MultiheadAttention(nn.Module):
             n_heads: Number of attention heads.
             dropout: Dropout probability for attention outputs.
             rope: Rotary positional embedding instance.
+            qk_norm: QK normalization type ("none", "norm", or "learned_scale").
+            norm_type: Normalization type for qk_norm="norm" ("layernorm" or "rmsnorm").
         """
         super().__init__()
         assert d_model % n_heads == 0, "d_model must be divisible by n_heads"
@@ -37,6 +46,38 @@ class MultiheadAttention(nn.Module):
         self.out = nn.Linear(d_model, d_model, bias=False)
         self.dropout = dropout
         self.rope = rope
+
+        # QK normalization setup
+        self.qk_norm = qk_norm.lower()
+        if self.qk_norm == "none":
+            self.q_norm = None
+            self.k_norm = None
+            self.q_scale = None
+            self.k_scale = None
+        elif self.qk_norm == "norm":
+            # Separate norm instances for Q and K, normalize over head_dim
+            norm_type = norm_type.lower()
+            if norm_type == "rmsnorm":
+                Norm = RMSNorm
+            elif norm_type == "layernorm":
+                Norm = nn.LayerNorm
+            else:
+                raise ValueError(f"Unknown norm_type: {norm_type}")
+            self.q_norm = Norm(self.head_dim)
+            self.k_norm = Norm(self.head_dim)
+            self.q_scale = None
+            self.k_scale = None
+        elif self.qk_norm == "learned_scale":
+            # Per-head scalar scaling after L2 normalization
+            # Shape: [n_heads, 1, 1] - broadcasts over [B, H, L, D]
+            self.q_norm = None
+            self.k_norm = None
+            self.q_scale = nn.Parameter(torch.ones(n_heads, 1, 1))
+            self.k_scale = nn.Parameter(torch.ones(n_heads, 1, 1))
+        else:
+            raise ValueError(
+                f"Unknown qk_norm: {qk_norm}. Expected 'none', 'norm', or 'learned_scale'"
+            )
 
     def forward(
         self,
@@ -73,6 +114,18 @@ class MultiheadAttention(nn.Module):
         q = reshape_heads(q)
         k = reshape_heads(k)
         v = reshape_heads(v)
+
+        # Apply QK normalization (before RoPE)
+        if self.qk_norm == "norm":
+            # Apply LayerNorm/RMSNorm to Q and K separately
+            # q, k shape: [B, H, L, D] - norm over last dim (head_dim)
+            q = self.q_norm(q)
+            k = self.k_norm(k)
+        elif self.qk_norm == "learned_scale":
+            # L2 normalize then apply per-head learned scale
+            # q_scale shape: [n_heads, 1, 1] -> broadcasts to [B, H, L, D]
+            q = F.normalize(q, p=2, dim=-1) * self.q_scale
+            k = F.normalize(k, p=2, dim=-1) * self.k_scale
 
         # RoPE on q,k
         cos, sin = self.rope.get_cos_sin(
